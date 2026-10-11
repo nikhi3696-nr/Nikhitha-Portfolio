@@ -190,8 +190,8 @@ html, body {
 
 /* ── SLIDE 1: COVER ───────────────────────────────────────────── */
 #s1 .slide-inner {
-  flex-direction: row; align-items: center;
-  justify-content: space-between; gap: 48px; padding: 56px 80px;
+  flex-direction: column; align-items: flex-start;
+  justify-content: center; gap: 0; padding: 44px 64px 52px;
 }
 .accent-bar {
   position: absolute; left: 0; top: 0;
@@ -199,22 +199,32 @@ html, body {
   background: linear-gradient(180deg, var(--periwinkle), var(--mint));
   z-index: 2;
 }
-.cover-left { flex: 1.1; padding-left: 8px; }
+/* Top row: photo + name side by side */
+.cover-top {
+  display: flex; flex-direction: row;
+  align-items: flex-end; gap: 36px;
+  width: 100%;
+}
+.cover-name-block { flex: 1; padding-bottom: 4px; }
 .cover-name {
-  font-size: clamp(2.8rem, 5.5vw, 5rem);
+  font-size: clamp(2.4rem, 4.8vw, 4.4rem);
   font-weight: 300; line-height: 1.0;
   letter-spacing: -0.03em; color: var(--fg); margin-bottom: 4px;
 }
 .cover-name span { display: block; font-weight: 700; color: var(--periwinkle); }
+/* Divider strip */
+.cover-divider {
+  width: 100%; height: 1px;
+  background: var(--rule);
+  margin: 20px 0 16px;
+}
+/* Sub-line reads L→R */
 .cover-sub {
-  font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase;
-  color: var(--fg-lt); margin-top: 16px; font-weight: 500;
+  font-size: 11.5px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--fg-lt); font-weight: 500; margin-bottom: 14px;
 }
-.cover-right {
-  flex: 0.9; display: flex; flex-direction: column;
-  align-items: center; gap: 18px;
-}
-.cover-pills { display: flex; gap: 7px; flex-wrap: wrap; justify-content: center; }
+/* Pills flow L→R */
+.cover-pills { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-start; }
 .pill {
   font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--periwinkle);
@@ -223,7 +233,7 @@ html, body {
 }
 
 /* ── PHOTO BOX ───────────────────────────────────────────────── */
-.photo-wrap { position: relative; width: min(260px, 28vw); }
+.photo-wrap { position: relative; width: min(200px, 22vw); }
 .photo-border-box {
   position: absolute; top: -8px; right: -8px;
   width: 100%; height: 100%;
@@ -270,10 +280,17 @@ html, body {
 .toc-arrow { color: var(--fg-lt); font-size: 13px; }
 
 /* ── SLIDE 3: ABOUT ──────────────────────────────────────────── */
-#s3 .slide-inner { flex-direction: row; gap: 52px; align-items: flex-start; }
-.about-photo { flex: 0 0 230px; }
-.about-text { flex: 1; padding-top: 4px; }
-.about-text p { font-size: 14px; color: var(--fg-mid); line-height: 1.85; margin-bottom: 14px; }
+#s3 .slide-inner { flex-direction: column; gap: 0; align-items: flex-start; }
+/* Photo + first para in same row */
+.about-top-row {
+  display: flex; flex-direction: row;
+  gap: 36px; align-items: flex-start; width: 100%; margin-bottom: 14px;
+}
+.about-photo { flex: 0 0 160px; }
+.about-first-para { flex: 1; padding-top: 4px; }
+/* Remaining paras flow full-width L→R */
+.about-text { width: 100%; }
+.about-text p { font-size: 13.5px; color: var(--fg-mid); line-height: 1.85; margin-bottom: 12px; }
 .about-text p strong { color: var(--fg); font-weight: 600; }
 .about-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
 .tag {
@@ -468,32 +485,34 @@ html, body {
       <rect width="300" height="300" fill="url(#d1)"/>
     </svg>
     <div class="slide-inner">
-      <div class="cover-left">
-        <p class="eyebrow" contenteditable="true" spellcheck="false">B2B Marketing Portfolio</p>
-        <h1 class="cover-name">
-          <span contenteditable="true" spellcheck="false" style="display:block;font-weight:300;color:var(--fg);">Nikhitha</span>
-          <span contenteditable="true" spellcheck="false">Regunathan</span>
-          <span style="display:block;font-size:clamp(0.85rem,1.2vw,1.1rem);font-weight:600;letter-spacing:0.18em;color:var(--periwinkle);margin-top:4px;" contenteditable="true" spellcheck="false">ACIM</span>
-        </h1>
-        <p class="cover-sub" contenteditable="true" spellcheck="false">Brand &amp; Marketing Specialist · UK &amp; Ireland · 7+ Years</p>
-        <div class="divider" style="margin-top:24px;"></div>
-        <div class="cover-pills" style="margin-top:0;">
-          <span class="pill" contenteditable="true" spellcheck="false">Brand Strategy</span>
-          <span class="pill" contenteditable="true" spellcheck="false">Demand Gen</span>
-          <span class="pill" contenteditable="true" spellcheck="false">Renewable Energy</span>
-          <span class="pill" contenteditable="true" spellcheck="false">ABM</span>
-        </div>
-      </div>
-      <div class="cover-right">
+      <!-- TOP ROW: photo left, name right -->
+      <div class="cover-top">
         <div class="photo-wrap">
           <div class="photo-border-box"></div>
           <div class="photo-box" id="photo-cover" onclick="triggerPhotoUpload('cover')" title="Click to add your photo">
             <div class="photo-placeholder" id="ph-cover">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
               <span class="photo-hint">Click to add<br>your photo</span>
             </div>
           </div>
         </div>
+        <div class="cover-name-block">
+          <p class="eyebrow" contenteditable="true" spellcheck="false">B2B Marketing Portfolio</p>
+          <h1 class="cover-name">
+            <span contenteditable="true" spellcheck="false" style="display:block;font-weight:300;color:var(--fg);">Nikhitha</span>
+            <span contenteditable="true" spellcheck="false">Regunathan</span>
+            <span style="display:block;font-size:clamp(0.85rem,1.2vw,1.1rem);font-weight:600;letter-spacing:0.18em;color:var(--periwinkle);margin-top:4px;" contenteditable="true" spellcheck="false">ACIM</span>
+          </h1>
+        </div>
+      </div>
+      <!-- BELOW PHOTO: reads L→R -->
+      <div class="cover-divider"></div>
+      <p class="cover-sub" contenteditable="true" spellcheck="false">Brand &amp; Marketing Specialist · UK &amp; Ireland · 7+ Years</p>
+      <div class="cover-pills">
+        <span class="pill" contenteditable="true" spellcheck="false">Brand Strategy</span>
+        <span class="pill" contenteditable="true" spellcheck="false">Demand Gen</span>
+        <span class="pill" contenteditable="true" spellcheck="false">Renewable Energy</span>
+        <span class="pill" contenteditable="true" spellcheck="false">ABM</span>
       </div>
     </div>
   </div>
@@ -526,7 +545,8 @@ html, body {
       <p class="eyebrow">Who I Am</p>
       <h2 class="slide-h2" contenteditable="true" spellcheck="false">Welcome to my portfolio</h2>
       <div class="divider"></div>
-      <div style="display:flex;gap:44px;align-items:flex-start;flex:1;">
+      <!-- Photo left + first para right, reads L→R -->
+      <div class="about-top-row">
         <div class="about-photo">
           <div class="photo-wrap" style="width:100%;">
             <div class="photo-border-box"></div>
@@ -538,21 +558,24 @@ html, body {
             </div>
           </div>
         </div>
-        <div class="about-text">
+        <div class="about-first-para">
           <p contenteditable="true" spellcheck="false">Hi, I'm <strong>Nikki</strong> — a B2B marketing professional with <strong>7+ years of experience</strong> building brands and generating demand for complex, technical businesses.</p>
-          <p contenteditable="true" spellcheck="false">I'm currently <strong>Brand and Marketing Specialist at Entrust Services</strong>, a renewable energy and planning consultancy operating across the <strong>UK and Irish markets</strong>. I built their entire marketing function from the ground up — from brand strategy and SEO to paid campaigns, events, and sales enablement.</p>
-          <p contenteditable="true" spellcheck="false">Before Entrust, I worked at international agency <strong>KRDS</strong> across Singapore and UAE, on accounts including BMW, The Body Shop, Coca-Cola, and Singapore Zoo. I hold an <strong>MBA from the University of Chester</strong> and am an <strong>Associate Member of CIM</strong>.</p>
-          <div class="about-tags">
-            <span class="tag" contenteditable="true" spellcheck="false">Renewable Energy</span>
-            <span class="tag" contenteditable="true" spellcheck="false">B2B SaaS</span>
-            <span class="tag" contenteditable="true" spellcheck="false">UK &amp; Ireland</span>
-            <span class="tag" contenteditable="true" spellcheck="false">EMEA</span>
-            <span class="tag" contenteditable="true" spellcheck="false">Nordics</span>
-            <span class="tag" contenteditable="true" spellcheck="false">Agency-side</span>
-            <span class="tag" contenteditable="true" spellcheck="false">In-house</span>
-            <span class="tag" contenteditable="true" spellcheck="false">MBA</span>
-            <span class="tag" contenteditable="true" spellcheck="false">CIM Associate</span>
-          </div>
+        </div>
+      </div>
+      <!-- Remaining paras flow full-width, L→R -->
+      <div class="about-text">
+        <p contenteditable="true" spellcheck="false">I'm currently <strong>Brand and Marketing Specialist at Entrust Services</strong>, a renewable energy and planning consultancy operating across the <strong>UK and Irish markets</strong>. I built their entire marketing function from the ground up — from brand strategy and SEO to paid campaigns, events, and sales enablement.</p>
+        <p contenteditable="true" spellcheck="false">Before Entrust, I worked at international agency <strong>KRDS</strong> across Singapore and UAE, on accounts including BMW, The Body Shop, Coca-Cola, and Singapore Zoo. I hold an <strong>MBA from the University of Chester</strong> and am an <strong>Associate Member of CIM</strong>.</p>
+        <div class="about-tags">
+          <span class="tag" contenteditable="true" spellcheck="false">Renewable Energy</span>
+          <span class="tag" contenteditable="true" spellcheck="false">B2B SaaS</span>
+          <span class="tag" contenteditable="true" spellcheck="false">UK &amp; Ireland</span>
+          <span class="tag" contenteditable="true" spellcheck="false">EMEA</span>
+          <span class="tag" contenteditable="true" spellcheck="false">Nordics</span>
+          <span class="tag" contenteditable="true" spellcheck="false">Agency-side</span>
+          <span class="tag" contenteditable="true" spellcheck="false">In-house</span>
+          <span class="tag" contenteditable="true" spellcheck="false">MBA</span>
+          <span class="tag" contenteditable="true" spellcheck="false">CIM Associate</span>
         </div>
       </div>
     </div>
