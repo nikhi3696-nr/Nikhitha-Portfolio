@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nikki Regunathan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap">
+<style>
+/* ── TOKENS: Soft pastels, white background ──────────────────── */
+:root {
+  --bg:       #F7F7F5;
+  --bg-alt:   #EEEEF6;
+  --page-bg:  #EBEBEA;
+  --fg:       #1A1A2E;
+  --fg-mid:   #52526A;
+  --fg-lt:    #9898B0;
+  --periwinkle: #7B9FE8;
+  --peri-lt:  #A8C0F0;
+  --peri-bg:  rgba(123,159,232,0.10);
+  --mint:     #64C9B0;
+  --mint-lt:  #90DAC8;
+  --mint-bg:  rgba(100,201,176,0.10);
+  --rule:     rgba(26,26,46,0.08);
+  --f:        'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  font-family: var(--f);
+  background: var(--page-bg);
+  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── SLIDE CARD: full-height centred card ──────────────────────── */
+#deck-wrap {
+  width: min(94vw, 1080px);
+  height: min(92vh, 720px);
+  position: relative;
+  border-radius: 16px;
+  box-shadow: 0 12px 56px rgba(26,26,46,0.14), 0 2px 10px rgba(26,26,46,0.07);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* ── EDIT MODE HINT ──────────────────────────────────────────── */
+[contenteditable]:hover,
+[contenteditable]:focus {
+  outline: 2px dashed var(--periwinkle);
+  outline-offset: 3px;
+  border-radius: 3px;
+  cursor: text;
+}
+[contenteditable]:focus { background: rgba(123,159,232,0.05); }
+
+/* ── SLIDE ENGINE ─────────────────────────────────────────────── */
+.deck { width: 100%; height: 100%; position: relative; }
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  background: var(--bg);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.35s ease;
+  overflow: hidden;
+  border-radius: 14px;
+}
+.slide.active { opacity: 1; pointer-events: all; }
+
+/* ── TOP TOOLBAR (editing + save) ────────────────────────────── */
+.toolbar {
+  position: absolute;
+  top: 12px; right: 14px;
+  z-index: 200;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.toolbar-btn {
+  font-family: var(--f);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--rule);
+  background: var(--bg);
+  color: var(--fg-mid);
+  cursor: pointer;
+  display: flex; align-items: center; gap: 5px;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+  white-space: nowrap;
+}
+.toolbar-btn:hover { border-color: var(--periwinkle); color: var(--periwinkle); }
+.toolbar-btn.primary {
+  background: var(--periwinkle);
+  color: #fff;
+  border-color: var(--periwinkle);
+}
+.toolbar-btn.primary:hover { background: var(--peri-lt); border-color: var(--peri-lt); }
+.edit-indicator {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--mint);
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+.edit-indicator.on { opacity: 1; }
+
+/* ── NAV CONTROLS ─────────────────────────────────────────────── */
+.nav-controls {
+  position: absolute;
+  bottom: 14px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; align-items: center; gap: 12px;
+  z-index: 100;
+  background: rgba(247,247,245,0.92);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid var(--rule);
+  border-radius: 50px;
+  padding: 6px 14px;
+  box-shadow: 0 2px 12px rgba(123,159,232,0.12);
+}
+.nav-btn {
+  width: 30px; height: 30px;
+  border: 1.5px solid var(--rule);
+  border-radius: 50%;
+  background: var(--bg-alt);
+  color: var(--fg);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.nav-btn:hover:not(:disabled) { background: var(--periwinkle); color: #fff; border-color: var(--periwinkle); }
+.nav-btn:disabled { opacity: 0.3; cursor: default; }
+.slide-counter {
+  font-size: 11px; font-weight: 600; color: var(--fg-lt);
+  letter-spacing: 0.06em; min-width: 44px; text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.slide-dots { display: flex; gap: 5px; align-items: center; }
+.dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--rule); cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  border: none; padding: 0;
+}
+.dot.on { background: var(--periwinkle); transform: scale(1.4); }
+
+/* ── COMMON SLIDE PARTS ──────────────────────────────────────── */
+.slide-inner {
+  flex: 1; display: flex; flex-direction: column;
+  padding: 40px 56px 72px;
+  position: relative; z-index: 1;
+  overflow-y: auto;
+}
+.eyebrow {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--mint); margin-bottom: 10px;
+}
+.slide-h1 {
+  font-size: clamp(2.2rem, 4vw, 3.2rem);
+  font-weight: 300; line-height: 1.1;
+  color: var(--fg); letter-spacing: -0.02em;
+}
+.slide-h1 strong { font-weight: 700; }
+.slide-h2 {
+  font-size: clamp(1.5rem, 2.6vw, 2rem);
+  font-weight: 300; color: var(--fg);
+  letter-spacing: -0.01em; line-height: 1.15; margin-bottom: 24px;
+}
+.divider {
+  width: 36px; height: 3px;
+  background: linear-gradient(90deg, var(--periwinkle), var(--mint));
+  border-radius: 2px; margin: 18px 0;
+}
+
+/* ── GEOMETRIC DECO ──────────────────────────────────────────── */
+.geo { position: absolute; pointer-events: none; opacity: 0.07; }
+
+/* ── SLIDE 1: COVER ───────────────────────────────────────────── */
+#s1 .slide-inner {
+  flex-direction: row; align-items: center;
+  justify-content: space-between; gap: 48px; padding: 56px 80px;
+}
+.accent-bar {
+  position: absolute; left: 0; top: 0;
+  width: 5px; height: 100%;
+  background: linear-gradient(180deg, var(--periwinkle), var(--mint));
+  z-index: 2;
+}
+.cover-left { flex: 1.1; padding-left: 8px; }
+.cover-name {
+  font-size: clamp(2.8rem, 5.5vw, 5rem);
+  font-weight: 300; line-height: 1.0;
+  letter-spacing: -0.03em; color: var(--fg); margin-bottom: 4px;
+}
+.cover-name span { display: block; font-weight: 700; color: var(--periwinkle); }
+.cover-sub {
+  font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--fg-lt); margin-top: 16px; font-weight: 500;
+}
+.cover-right {
+  flex: 0.9; display: flex; flex-direction: column;
+  align-items: center; gap: 18px;
+}
+.cover-pills { display: flex; gap: 7px; flex-wrap: wrap; justify-content: center; }
+.pill {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--periwinkle);
+  border: 1.5px solid var(--peri-lt); padding: 4px 11px; border-radius: 20px;
+  background: var(--peri-bg);
+}
+
+/* ── PHOTO BOX ───────────────────────────────────────────────── */
+.photo-wrap { position: relative; width: min(260px, 28vw); }
+.photo-border-box {
+  position: absolute; top: -8px; right: -8px;
+  width: 100%; height: 100%;
+  border: 2px solid var(--peri-lt); border-radius: 6px; z-index: 0;
+}
+.photo-box {
+  position: relative; z-index: 1;
+  aspect-ratio: 3/4; background: var(--bg-alt);
+  border-radius: 6px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  border: 1.5px solid var(--rule);
+  cursor: pointer; transition: border-color 0.2s;
+}
+.photo-box:hover { border-color: var(--periwinkle); }
+.photo-box img { width: 100%; height: 100%; object-fit: cover; }
+.photo-placeholder {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 8px;
+  color: var(--fg-lt); text-align: center; padding: 16px;
+}
+.photo-placeholder svg { opacity: 0.35; }
+.photo-hint {
+  font-size: 10px; letter-spacing: 0.06em; line-height: 1.4;
+  color: var(--fg-lt);
+}
+.photo-upload-input { display: none; }
+
+/* ── SLIDE 2: TABLE OF CONTENTS ──────────────────────────────── */
+#s2 .slide-inner { justify-content: center; }
+.toc-grid { display: flex; flex-direction: column; gap: 9px; max-width: 620px; }
+.toc-btn {
+  display: flex; align-items: center; gap: 18px;
+  padding: 16px 24px; border: 1.5px solid var(--rule);
+  border-radius: 8px; background: var(--bg);
+  cursor: pointer; transition: border-color 0.2s, background 0.2s;
+  text-align: left; width: 100%; font-family: var(--f);
+}
+.toc-btn:hover { border-color: var(--periwinkle); background: var(--peri-bg); }
+.toc-num {
+  font-size: 11px; font-weight: 700; color: var(--mint);
+  letter-spacing: 0.1em; width: 26px; flex-shrink: 0;
+}
+.toc-label { font-size: 14px; font-weight: 500; color: var(--fg); flex: 1; }
+.toc-arrow { color: var(--fg-lt); font-size: 13px; }
+
+/* ── SLIDE 3: ABOUT ──────────────────────────────────────────── */
+#s3 .slide-inner { flex-direction: row; gap: 52px; align-items: flex-start; }
+.about-photo { flex: 0 0 230px; }
+.about-text { flex: 1; padding-top: 4px; }
+.about-text p { font-size: 14px; color: var(--fg-mid); line-height: 1.85; margin-bottom: 14px; }
+.about-text p strong { color: var(--fg); font-weight: 600; }
+.about-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.tag {
+  font-size: 10px; font-weight: 600; color: var(--periwinkle);
+  background: var(--peri-bg); padding: 4px 11px;
+  border-radius: 4px; letter-spacing: 0.05em;
+}
+
+/* ── SLIDE 4: SKILLS ─────────────────────────────────────────── */
+.skills-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; flex: 1; }
+.skill-item {
+  background: var(--bg-alt); border: 1.5px solid var(--rule);
+  border-radius: 8px; padding: 18px 22px;
+  transition: border-color 0.2s;
+}
+.skill-item:hover { border-color: var(--peri-lt); }
+.skill-item h3 {
+  font-size: 13px; font-weight: 700; color: var(--fg);
+  margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+}
+.skill-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--periwinkle), var(--mint));
+  flex-shrink: 0;
+}
+.skill-item p { font-size: 12.5px; color: var(--fg-mid); line-height: 1.7; }
+
+/* ── TOOLS ───────────────────────────────────────────────────── */
+.tools-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 14px; flex: 1; align-content: start;
+}
+.tool-card {
+  background: var(--bg-alt); border: 1.5px solid var(--rule);
+  border-radius: 10px; padding: 18px 12px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 9px; text-align: center;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.tool-card:hover { border-color: var(--peri-lt); box-shadow: 0 4px 18px rgba(123,159,232,0.12); }
+.tool-logo { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; }
+.tool-name { font-size: 11px; font-weight: 600; color: var(--fg-mid); letter-spacing: 0.02em; }
+
+/* ── PROJECTS ─────────────────────────────────────────────────── */
+.project-layout {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 28px; flex: 1; align-items: center;
+}
+.project-visual {
+  background: var(--bg-alt); border-radius: 10px;
+  border: 1.5px solid var(--rule); height: 100%;
+  min-height: 180px; display: flex;
+  align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+}
+.project-sector {
+  position: absolute; top: 12px; left: 12px;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; color: #fff;
+  background: linear-gradient(90deg, var(--periwinkle), var(--mint));
+  padding: 4px 10px; border-radius: 4px;
+}
+.project-info h3 {
+  font-size: 20px; font-weight: 700; color: var(--fg);
+  margin-bottom: 10px; line-height: 1.25;
+}
+.project-info p { font-size: 13px; color: var(--fg-mid); line-height: 1.8; margin-bottom: 16px; }
+.project-kpis {
+  display: flex; gap: 14px; padding-top: 14px;
+  border-top: 1.5px solid var(--rule);
+}
+.kpi strong {
+  display: block; font-size: 18px; font-weight: 700;
+  color: var(--periwinkle); font-variant-numeric: tabular-nums;
+}
+.kpi small { font-size: 10px; color: var(--fg-lt); letter-spacing: 0.05em; text-transform: uppercase; }
+.bullet-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.bullet-list li {
+  font-size: 13px; color: var(--fg-mid); line-height: 1.5;
+  padding-left: 15px; position: relative;
+}
+.bullet-list li::before {
+  content: ''; position: absolute; left: 0; top: 7px;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--periwinkle), var(--mint));
+}
+
+/* ── PROJECTS TITLE SLIDE ────────────────────────────────────── */
+#s7 .slide-inner { justify-content: center; }
+.grad-bar {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
+  background: linear-gradient(90deg, var(--periwinkle), var(--mint));
+}
+
+/* ── TESTIMONIALS ────────────────────────────────────────────── */
+.testimonials-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 18px; flex: 1;
+}
+.testimonial {
+  background: var(--bg-alt); border: 1.5px solid var(--rule);
+  border-radius: 10px; padding: 24px;
+  display: flex; flex-direction: column; gap: 14px;
+  transition: border-color 0.2s;
+}
+.testimonial:hover { border-color: var(--peri-lt); }
+.testimonial blockquote {
+  font-size: 13px; font-style: italic; color: var(--fg-mid);
+  line-height: 1.8; flex: 1;
+}
+.open-quote { font-size: 2rem; color: var(--peri-lt); line-height: 0; vertical-align: -0.4em; margin-right: 2px; }
+.testi-author { font-size: 12px; font-weight: 700; color: var(--fg); letter-spacing: 0.03em; }
+.testi-role { font-size: 11px; color: var(--fg-lt); }
+
+/* ── WHY ME ──────────────────────────────────────────────────── */
+.why-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; flex: 1; }
+.why-card {
+  background: var(--bg-alt); border: 1.5px solid var(--rule);
+  border-radius: 10px; padding: 22px;
+  display: flex; flex-direction: column; gap: 7px;
+  transition: border-color 0.2s;
+}
+.why-card:hover { border-color: var(--peri-lt); }
+.why-num { font-size: 34px; font-weight: 700; color: var(--periwinkle); line-height: 1; font-variant-numeric: tabular-nums; }
+.why-card h4 { font-size: 13px; font-weight: 700; color: var(--fg); }
+.why-card p { font-size: 12.5px; color: var(--fg-mid); line-height: 1.65; }
+
+/* ── THANK YOU ───────────────────────────────────────────────── */
+#s13 .slide-inner {
+  align-items: center; justify-content: center;
+  text-align: center; gap: 18px;
+}
+.thankyou-name {
+  font-size: clamp(2.4rem, 4.5vw, 4.2rem);
+  font-weight: 300; letter-spacing: -0.02em; color: var(--fg);
+}
+.thankyou-name strong { font-weight: 700; color: var(--periwinkle); }
+.contact-row {
+  display: flex; gap: 28px; justify-content: center;
+  align-items: center; flex-wrap: wrap; margin-top: 6px;
+}
+.contact-row a {
+  font-size: 13px; color: var(--fg-mid); text-decoration: none;
+  display: flex; align-items: center; gap: 6px;
+  transition: color 0.2s;
+}
+.contact-row a:hover { color: var(--periwinkle); }
+.quote-block {
+  max-width: 500px; margin: 6px auto 0;
+  font-size: 14px; font-style: italic; color: var(--fg-lt); line-height: 1.75;
+}
+.quote-block cite {
+  display: block; font-style: normal; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--mint); margin-top: 10px;
+}
+
+/* ── MOBILE ──────────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .slide-inner { padding: 36px 22px 70px; }
+  #s1 .slide-inner, #s3 .slide-inner, .project-layout { flex-direction: column; grid-template-columns: 1fr; }
+  .skills-cols, .tools-grid, .testimonials-grid, .why-grid { grid-template-columns: 1fr; }
+  .tools-grid { grid-template-columns: repeat(2, 1fr); }
+  .cover-name { font-size: 2.4rem; }
+  .photo-wrap { width: 150px; }
+  .about-photo { flex: none; width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .slide { transition: none; } }
+</style>
+</head>
+<body>
+
+<!-- Hidden file inputs for photo upload -->
+<input type="file" id="photo-input-cover" class="photo-upload-input" accept="image/*">
+<input type="file" id="photo-input-about" class="photo-upload-input" accept="image/*">
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <span class="edit-indicator" id="editIndicator">✏ EDITING</span>
+  <button class="toolbar-btn" onclick="toggleEdit()" id="editBtn">✏ Edit</button>
+  <button class="toolbar-btn primary" onclick="saveHTML()">⬇ Save HTML</button>
+</div>
+
+<div id="deck-wrap">
+<div class="deck" id="deck">
+
+  <!-- ── SLIDE 1: COVER ─────────────────────────────────────── -->
+  <div class="slide active" id="s1">
+    <div class="accent-bar"></div>
+    <!-- Dot-grid deco -->
+    <svg class="geo" style="width:300px;height:300px;bottom:-50px;right:60px;color:var(--periwinkle);" viewBox="0 0 300 300" fill="currentColor">
+      <pattern id="d1" x="0" y="0" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.4"/></pattern>
+      <rect width="300" height="300" fill="url(#d1)"/>
+    </svg>
+    <div class="slide-inner">
+      <div class="cover-left">
+        <p class="eyebrow" contenteditable="true" spellcheck="false">B2B Marketing Portfolio</p>
+        <h1 class="cover-name">
+          <span contenteditable="true" spellcheck="false" style="display:block;font-weight:300;color:var(--fg);">Nikhitha</span>
+          <span contenteditable="true" spellcheck="false">Regunathan</span>
+          <span style="display:block;font-size:clamp(0.85rem,1.2vw,1.1rem);font-weight:600;letter-spacing:0.18em;color:var(--periwinkle);margin-top:4px;" contenteditable="true" spellcheck="false">ACIM</span>
+        </h1>
+        <p class="cover-sub" contenteditable="true" spellcheck="false">Brand &amp; Marketing Specialist · UK &amp; Ireland · 7+ Years</p>
+        <div class="divider" style="margin-top:24px;"></div>
+        <div class="cover-pills" style="margin-top:0;">
+          <span class="pill" contenteditable="true" spellcheck="false">Brand Strategy</span>
+          <span class="pill" contenteditable="true" spellcheck="false">Demand Gen</span>
+          <span class="pill" contenteditable="true" spellcheck="false">Renewable Energy</span>
+          <span class="pill" contenteditable="true" spellcheck="false">ABM</span>
+        </div>
+      </div>
+      <div class="cover-right">
+        <div class="photo-wrap">
+          <div class="photo-border-box"></div>
+          <div class="photo-box" id="photo-cover" onclick="triggerPhotoUpload('cover')" title="Click to add your photo">
+            <div class="photo-placeholder" id="ph-cover">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+              <span class="photo-hint">Click to add<br>your photo</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 2: TABLE OF CONTENTS ────────────────────────── -->
+  <div class="slide" id="s2">
+    <svg class="geo" style="width:220px;height:220px;bottom:-20px;right:-20px;color:var(--periwinkle);" viewBox="0 0 220 220" fill="none" stroke="currentColor" stroke-width="1">
+      <circle cx="110" cy="110" r="35"/><circle cx="110" cy="110" r="60"/><circle cx="110" cy="110" r="90"/><circle cx="110" cy="110" r="110"/>
+    </svg>
+    <div class="accent-bar"></div>
+    <div class="slide-inner" style="justify-content:center;">
+      <p class="eyebrow">Contents</p>
+      <h2 class="slide-h2">What's inside</h2>
+      <div class="divider"></div>
+      <div class="toc-grid">
+        <button class="toc-btn" onclick="goTo(2)"><span class="toc-num">01</span><span class="toc-label">About Me</span><span class="toc-arrow">→</span></button>
+        <button class="toc-btn" onclick="goTo(3)"><span class="toc-num">02</span><span class="toc-label">My Skills</span><span class="toc-arrow">→</span></button>
+        <button class="toc-btn" onclick="goTo(4)"><span class="toc-num">03</span><span class="toc-label">Tools &amp; Platforms</span><span class="toc-arrow">→</span></button>
+        <button class="toc-btn" onclick="goTo(6)"><span class="toc-num">04</span><span class="toc-label">Selected Projects</span><span class="toc-arrow">→</span></button>
+        <button class="toc-btn" onclick="goTo(10)"><span class="toc-num">05</span><span class="toc-label">Testimonials</span><span class="toc-arrow">→</span></button>
+        <button class="toc-btn" onclick="goTo(11)"><span class="toc-num">06</span><span class="toc-label">Why Choose Me</span><span class="toc-arrow">→</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 3: ABOUT ─────────────────────────────────────── -->
+  <div class="slide" id="s3">
+    <div class="accent-bar"></div>
+    <div class="slide-inner">
+      <p class="eyebrow">Who I Am</p>
+      <h2 class="slide-h2" contenteditable="true" spellcheck="false">Welcome to my portfolio</h2>
+      <div class="divider"></div>
+      <div style="display:flex;gap:44px;align-items:flex-start;flex:1;">
+        <div class="about-photo">
+          <div class="photo-wrap" style="width:100%;">
+            <div class="photo-border-box"></div>
+            <div class="photo-box" id="photo-about" onclick="triggerPhotoUpload('about')" title="Click to add your photo" style="aspect-ratio:1/1;">
+              <div class="photo-placeholder" id="ph-about">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                <span class="photo-hint">Click to add<br>your photo</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="about-text">
+          <p contenteditable="true" spellcheck="false">Hi, I'm <strong>Nikki</strong> — a B2B marketing professional with <strong>7+ years of experience</strong> building brands and generating demand for complex, technical businesses.</p>
+          <p contenteditable="true" spellcheck="false">I'm currently <strong>Brand and Marketing Specialist at Entrust Services</strong>, a renewable energy and planning consultancy operating across the <strong>UK and Irish markets</strong>. I built their entire marketing function from the ground up — from brand strategy and SEO to paid campaigns, events, and sales enablement.</p>
+          <p contenteditable="true" spellcheck="false">Before Entrust, I worked at international agency <strong>KRDS</strong> across Singapore and UAE, on accounts including BMW, The Body Shop, Coca-Cola, and Singapore Zoo. I hold an <strong>MBA from the University of Chester</strong> and am an <strong>Associate Member of CIM</strong>.</p>
+          <div class="about-tags">
+            <span class="tag" contenteditable="true" spellcheck="false">Renewable Energy</span>
+            <span class="tag" contenteditable="true" spellcheck="false">B2B SaaS</span>
+            <span class="tag" contenteditable="true" spellcheck="false">UK &amp; Ireland</span>
+            <span class="tag" contenteditable="true" spellcheck="false">EMEA</span>
+            <span class="tag" contenteditable="true" spellcheck="false">Nordics</span>
+            <span class="tag" contenteditable="true" spellcheck="false">Agency-side</span>
+            <span class="tag" contenteditable="true" spellcheck="false">In-house</span>
+            <span class="tag" contenteditable="true" spellcheck="false">MBA</span>
+            <span class="tag" contenteditable="true" spellcheck="false">CIM Associate</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 4: SKILLS ────────────────────────────────────── -->
+  <div class="slide" id="s4">
+    <div class="accent-bar"></div>
+    <div class="slide-inner">
+      <p class="eyebrow">What I Bring</p>
+      <h2 class="slide-h2" contenteditable="true" spellcheck="false">My expertise</h2>
+      <div class="divider"></div>
+      <div class="skills-cols">
+        <div class="skill-item"><h3><span class="skill-dot"></span><span contenteditable="true" spellcheck="false">Brand Strategy &amp; Identity</span></h3><p contenteditable="true" spellcheck="false">Positioning, messaging frameworks, visual identity, tone of voice, and brand guidelines built for complex B2B audiences.</p></div>
+        <div class="skill-item"><h3><span class="skill-dot"></span><span contenteditable="true" spellcheck="false">Demand Generation</span></h3><p contenteditable="true" spellcheck="false">End-to-end ABM campaigns across LinkedIn, Google Ads, and email targeting solar developers, grid operators, and EPCs.</p></div>
+        <div class="skill-item"><h3><span class="skill-dot"></span><span contenteditable="true" spellcheck="false">Content &amp; Thought Leadership</span></h3><p contenteditable="true" spellcheck="false">White papers, case studies, website copy, bid collateral, and LinkedIn content programmes positioning businesses as sector leaders.</p></div>
+        <div class="skill-item"><h3><span class="skill-dot"></span><span contenteditable="true" spellcheck="false">Events &amp; Employer Branding</span></h3><p contenteditable="true" spellcheck="false">End-to-end industry conference management and employer brand campaigns to attract specialist talent in the energy sector.</p></div>
+        <div class="skill-item"><h3><span class="skill-dot"></span><span contenteditable="true" spellcheck="false">Marketing Analytics &amp; Reporting</span></h3><p contenteditable="true" spellcheck="false">MD-level reporting on pipeline contribution and ROI. Experienced with HubSpot, Salesforce, GA4, and paid platform dashboards.</p></div>
+        <div class="skill-item"><h3><span class="skill-dot"></span><span contenteditable="true" spellcheck="false">Sales Enablement &amp; Bid Support</span></h3><p contenteditable="true" spellcheck="false">Pitch decks, capability statements, and proposal materials that shorten sales cycles and strengthen conversion from bid to contract.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 5: TOOLS — CRM & PAID ───────────────────────── -->
+  <div class="slide" id="s5">
+    <div class="accent-bar"></div>
+    <div class="slide-inner">
+      <p class="eyebrow">Tech Stack</p>
+      <h2 class="slide-h2">CRM, Paid &amp; Analytics</h2>
+      <div class="divider"></div>
+      <div class="tools-grid">
+        <div class="tool-card"><div class="tool-logo"><svg width="42" height="42" viewBox="0 0 42 42" fill="none"><rect width="42" height="42" rx="8" fill="#FF7A59" opacity="0.12"/><circle cx="26" cy="12" r="4" fill="#FF7A59"/><path d="M26 16v5M20 23a6 6 0 1 0 12 0 6 6 0 0 0-12 0z" stroke="#FF7A59" stroke-width="2" fill="none"/><path d="M10 14V16M10 14a3 3 0 1 1 0-6 3 3 0 0 1 0 6z" stroke="#FF7A59" stroke-width="2" fill="none"/><path d="M10 16l5 5" stroke="#FF7A59" stroke-width="2"/></svg></div><span class="tool-name">HubSpot</span></div>
+        <div class="tool-card"><div class="tool-logo"><svg width="42" height="42" viewBox="0 0 42 42" fill="none"><rect width="42" height="42" rx="8" fill="#00A1E0" opacity="0.12"/><path d="M21 9c-2.5 0-4.7 1.3-5.9 3.2a5 5 0 0 0-6.6 4.8 5 5 0 0 0 1 3A4.5 4.5 0 0 0 8 23a4.5 4.5 0 0 0 4.5 4.5h16a4 4 0 0 0 .5-8 6 6 0 0 0-8-10.5z" fill="#00A1E0"/></svg></div><span class="tool-name">Salesforce</span></div>
+        <div class="tool-card"><div class="tool-logo"><svg width="42" height="42" viewBox="0 0 42 42" fill="none"><rect width="42" height="42" rx="8" fill="#FBBC04" opacity="0.12"/><path d="M6 26L14 12l5 8-5 8H6z" fill="#FBBC04"/><path d="M14 12l10 14H19l-5-6 5-8z" fill="#4285F4"/><circle cx="33" cy="26" r="5" fill="#34A853"/></svg></div><span class="tool-name">Google Ads</span></div>
+        <div class="tool-card"><div class="tool-logo"><svg width="42" height="42" viewBox="0 0 42 42" fill="none"><rect width="42" height="42" rx="8" fill="#E37400" opacity="0.12"/><rect x="8" y="20" width="6" height="14" rx="3" fill="#E37400" opacity="0.5"/><rect x="18" y="14" width="6" height="20" rx="3" fill="#E37400" opacity="0.75"/><rect x="28" y="8" width="6" height="26" rx="3" fill="#E37400"/></svg></div><span class="tool-name">Google Analytics</span></div>
+        <div class="tool-card"><div class="tool-logo"><svg width="42" height="42" viewBox="0 0 42 42" fill="none"><rect width="42" height="42" rx="8" fill="#0A66C2" opacity="0.12"/><rect x="8" y="16" width="6" height="18" rx="1" fill="#0A66C2"/><circle cx="11" cy="11" r="3.5" fill="#0A66C2"/><path d="M18 16h5v2.5S24.5 16 28 16c4 0 5 2.5 5 6v12h-5V23c0-2-0.5-3-2.5-3S23 21 23 23v11h-5V16z" fill="#0A66C2"/></svg></div><span class="tool-name">LinkedIn Ads</span></div>
+        <div class="tool-card"><div class="tool-logo"><svg width="42" height="42" viewBox="0 0 42 42" fill="none"><rect width="42" height="42" rx="8" fill="#0082FB" opacity="0.12"/><path d="M8 24c0-3 1.8-5.5 4-5.5s3.5 2 5.5 5.5c2 3.5 3.5 5.5 5.5 5.5s5-4 5-9.5c0-3.5-1.5-5.5-4-5.5s-4 2.5-4 5" stroke="#0082FB" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M28.5 15c2 0 3.5 2.5 3.5 6s-1.5 9-5.5 9" stroke="#0082FB" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg></div><span class="tool-name">Meta Ads</span></div>
+        <div class="tool-card"><div class="tool-logo"><svg width="42" height="42" viewBox="0 0 42 42" fill="none"><rect width="42" height="42" rx="8" fill="#FFE01B" opacity="0.2"/><ellipse cx="21" cy="26" rx="10" ry="10" fill="#FFE01B" stroke="#241C15" stroke-width="1"/><ellipse cx="21" cy="22" rx="5.5" ry="5.5" fill="#241C15" opacity="0.12"/><circle cx="18" cy="23" r="1.5" fill="#241C15"/><circle cx="24" cy="23" r="1.5" fill="#241C15"/><path d="M18 27c1 1 5 1 6 0" stroke="#241C15" stroke-width="1" fill="none" stroke-linecap="round"/><path d="M27 20c1-2 4-2 4 0s-2 3-2 3" stroke="#C8A900" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg></div><span class="tool-name">Mailchimp</span></div>
+        <div class="tool-card"><div class="tool-logo"><svg width="42" height="42" viewBox="0 0 42 42" fill="none"><rect width="42" height="42" rx="8" fill="#00A1E0" opacity="0.12"/><path d="M12 30V14l14 8-14 8z" fill="#00A1E0"/><path d="M12 14h8a6 6 0 0 1 0 12" stroke="#00A1E0" stroke-width="2" fill="none"/></svg></div><span class="tool-name">Pardot</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 6: TOOLS — CREATIVE ─────────────────────────── -->
+  <div class="slide" id="s6">
+    <div class="accent-bar"></div>
+    <div class="slide-inner">
+      <p class="eyebrow">Tech Stack</p>
+      <h2 class="slide-h2">Creative &amp; Design Tools</h2>
+      <div class="divider"></div>
+      <div class="tools-grid">
+        <div class="tool-card"><div class="tool-logo"><svg width="42" height="42" viewBox="0 0 42 42" fill="none"><rect width="42" height="42" rx="8" fill="#49021F" opacity="0.08"/><rect x="8" y="8" width="26" height="26" rx="4" fill="#49021F"/><text x="21" y="27" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#FF3366">Id</text></svg></div><span class="tool-name">InDesign</span></div>
+        <div class="tool-card"><div class="tool-logo"><svg width="42" height="42" viewBox="0 0 42 42" fill="none"><rect width="42" height="42" rx="8" fill="#001D34" opacity="0.08"/><rect x="8" y="8" width="26" height="26" rx="4" fill="#001D34"/><text x="21" y="27" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#31A8FF">Ps</text></svg></div><span class="tool-name">Photoshop</span></div>
+        <div class="tool-card"><div class="tool-logo"><svg width="42" height="42" viewBox="0 0 42 42" fill="none"><rect width="42" height="42" rx="8" fill="#00005B" opacity="0.08"/><rect x="8" y="8" width="26" height="26" rx="4" fill="#00005B"/><text x="21" y="27" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#9999FF">Pr</text></svg></div><span class="tool-name">Premiere Pro</span></div>
+        <div class="tool-card"><div class="tool-logo"><svg width="42" height="42" viewBox="0 0 42 42" fill="none"><rect width="42" height="42" rx="8" fill="#7D2AE8" opacity="0.12"/><circle cx="21" cy="21" r="13" fill="#7D2AE8"/><text x="21" y="26" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="700" fill="#fff">C</text></svg></div><span class="tool-name">Canva</span></div>
+        <div class="tool-card"><div class="tool-logo"><svg width="42" height="42" viewBox="0 0 42 42" fill="none"><rect width="42" height="42" rx="8" fill="#F24E1E" opacity="0.08"/><g transform="translate(13,7)"><rect x="0" y="0" width="8" height="8" rx="4" fill="#F24E1E"/><rect x="8" y="0" width="8" height="8" rx="4" fill="#FF7262"/><rect x="0" y="9" width="8" height="8" rx="4" fill="#A259FF"/><rect x="8" y="9" width="8" height="8" rx="4" fill="#1ABCFE"/><rect x="0" y="18" width="8" height="8" rx="4" fill="#0ACF83"/></g></svg></div><span class="tool-name">Figma</span></div>
+        <div class="tool-card"><div class="tool-logo"><svg width="42" height="42" viewBox="0 0 42 42" fill="none"><rect width="42" height="42" rx="8" fill="#7B9FE8" opacity="0.12"/><circle cx="21" cy="21" r="12" stroke="#7B9FE8" stroke-width="2" fill="none"/><path d="M15 21h12M21 15v12" stroke="#7B9FE8" stroke-width="2" stroke-linecap="round"/><circle cx="21" cy="21" r="4" fill="#7B9FE8"/></svg></div><span class="tool-name">Stanley AI</span></div>
+        <div class="tool-card"><div class="tool-logo"><svg width="42" height="42" viewBox="0 0 42 42" fill="none"><rect width="42" height="42" rx="8" fill="#4285F4" opacity="0.12"/><path d="M30 21a9 9 0 1 1-5-8" stroke="#4285F4" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M21 21h9" stroke="#4285F4" stroke-width="2.5" stroke-linecap="round"/></svg></div><span class="tool-name">G Suite</span></div>
+        <div class="tool-card"><div class="tool-logo"><svg width="42" height="42" viewBox="0 0 42 42" fill="none"><rect width="42" height="42" rx="8" fill="#B7472A" opacity="0.12"/><rect x="8" y="8" width="26" height="26" rx="4" fill="#B7472A"/><text x="21" y="27" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#fff">Pp</text></svg></div><span class="tool-name">PowerPoint</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 7: PROJECTS TITLE ───────────────────────────── -->
+  <div class="slide" id="s7">
+    <div class="grad-bar"></div>
+    <svg class="geo" style="width:360px;height:360px;bottom:-60px;right:-40px;color:var(--periwinkle);" viewBox="0 0 360 360" fill="currentColor">
+      <pattern id="d2" x="0" y="0" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.4"/></pattern>
+      <rect width="360" height="360" fill="url(#d2)"/>
+    </svg>
+    <div class="slide-inner" style="justify-content:center;">
+      <p class="eyebrow">My Work</p>
+      <h1 class="slide-h1" style="max-width:12ch;" contenteditable="true" spellcheck="false">Selected<br><strong>Projects</strong></h1>
+      <div class="divider"></div>
+      <p style="font-size:14px;color:var(--fg-mid);max-width:48ch;line-height:1.8;" contenteditable="true" spellcheck="false">A cross-section of campaigns, brand work, and product launches across renewable energy, telecoms, and international agency accounts.</p>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 8: PROJECT 1 ─────────────────────────────────── -->
+  <div class="slide" id="s8">
+    <div class="accent-bar"></div>
+    <div class="slide-inner">
+      <p class="eyebrow">Project 01</p>
+      <div class="project-layout" style="margin-top:14px;">
+        <div class="project-visual">
+          <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.15" color="var(--periwinkle)"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M8 12h8M12 8v8"/></svg>
+          <span class="project-sector" contenteditable="true" spellcheck="false">Brand &amp; Digital</span>
+        </div>
+        <div class="project-info">
+          <h3 contenteditable="true" spellcheck="false">Entrust Services<br>Brand Build from Zero</h3>
+          <p contenteditable="true" spellcheck="false">Joined as the first marketer at Entrust and built the full marketing function from scratch — brand platform, website, content strategy, social presence, and internal comms — within 12 months. Now managing a team of four.</p>
+          <ul class="bullet-list">
+            <li contenteditable="true" spellcheck="false">Full brand identity: visual system, tone of voice, positioning</li>
+            <li contenteditable="true" spellcheck="false">SEO-optimised website and ongoing content programme</li>
+            <li contenteditable="true" spellcheck="false">LinkedIn company page grown to active pipeline-driver</li>
+            <li contenteditable="true" spellcheck="false">Employer brand campaigns to attract specialist planning talent</li>
+          </ul>
+          <div class="project-kpis">
+            <div class="kpi"><strong contenteditable="true" spellcheck="false">0→Full</strong><small>Function built</small></div>
+            <div class="kpi"><strong contenteditable="true" spellcheck="false">4</strong><small>Team managed</small></div>
+            <div class="kpi"><strong contenteditable="true" spellcheck="false">UK/IE</strong><small>Market reach</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 9: PROJECT 2 ─────────────────────────────────── -->
+  <div class="slide" id="s9">
+    <div class="accent-bar"></div>
+    <div class="slide-inner">
+      <p class="eyebrow">Project 02</p>
+      <div class="project-layout" style="margin-top:14px;">
+        <div class="project-visual">
+          <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.15" color="var(--periwinkle)"><path d="M12 22V12M12 12L6 7M12 12L18 7M4 19h16"/></svg>
+          <span class="project-sector" contenteditable="true" spellcheck="false">ABM · LinkedIn</span>
+        </div>
+        <div class="project-info">
+          <h3 contenteditable="true" spellcheck="false">Renewables ABM<br>Campaign — UK &amp; Ireland</h3>
+          <p contenteditable="true" spellcheck="false">Led an account-based marketing programme targeting solar farm developers, grid operators, and EPCs across UK and Ireland using LinkedIn Sales Navigator and Sponsored Content to drive pipeline for Entrust's planning and grid consultancy services.</p>
+          <ul class="bullet-list">
+            <li contenteditable="true" spellcheck="false">Audience segmentation by role: developers, DNO engineers, EPCs</li>
+            <li contenteditable="true" spellcheck="false">LinkedIn Sponsored Content &amp; InMail sequences</li>
+            <li contenteditable="true" spellcheck="false">Supporting case study and white paper content</li>
+            <li contenteditable="true" spellcheck="false">Full funnel reporting to MD level</li>
+          </ul>
+          <div class="project-kpis">
+            <div class="kpi"><strong contenteditable="true" spellcheck="false">ABM</strong><small>Strategy</small></div>
+            <div class="kpi"><strong contenteditable="true" spellcheck="false">Solar+Grid</strong><small>Audiences</small></div>
+            <div class="kpi"><strong contenteditable="true" spellcheck="false">UK/IE</strong><small>Markets</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 10: PROJECT 3 ─────────────────────────────────── -->
+  <div class="slide" id="s10">
+    <div class="accent-bar"></div>
+    <div class="slide-inner">
+      <p class="eyebrow">Project 03</p>
+      <div class="project-layout" style="margin-top:14px;">
+        <div class="project-visual">
+          <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.15" color="var(--periwinkle)"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>
+          <span class="project-sector" contenteditable="true" spellcheck="false">International · Agency</span>
+        </div>
+        <div class="project-info">
+          <h3 contenteditable="true" spellcheck="false">BMW &amp; The Body Shop<br>APAC Digital Campaigns</h3>
+          <p contenteditable="true" spellcheck="false">At KRDS Singapore and UAE, led digital and social campaigns for global brands across Asia Pacific and the Middle East — including product launches, influencer activations, and paid social on Facebook, Instagram, and YouTube.</p>
+          <ul class="bullet-list">
+            <li contenteditable="true" spellcheck="false">Campaign strategy &amp; execution for BMW, The Body Shop, Coca-Cola</li>
+            <li contenteditable="true" spellcheck="false">Paid social across Meta, YouTube, and local platforms</li>
+            <li contenteditable="true" spellcheck="false">Community management and influencer coordination</li>
+            <li contenteditable="true" spellcheck="false">Cross-market reporting for regional leadership</li>
+          </ul>
+          <div class="project-kpis">
+            <div class="kpi"><strong contenteditable="true" spellcheck="false">SG+UAE</strong><small>Markets</small></div>
+            <div class="kpi"><strong contenteditable="true" spellcheck="false">Multi-brand</strong><small>Accounts</small></div>
+            <div class="kpi"><strong contenteditable="true" spellcheck="false">B2C+B2B</strong><small>Scope</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 11: TESTIMONIALS ─────────────────────────────── -->
+  <div class="slide" id="s11">
+    <div class="accent-bar"></div>
+    <div class="slide-inner">
+      <p class="eyebrow">What Others Say</p>
+      <h2 class="slide-h2">Testimonials</h2>
+      <div class="divider"></div>
+      <div class="testimonials-grid">
+        <div class="testimonial">
+          <blockquote><span class="open-quote">"</span><span contenteditable="true" spellcheck="false">Nikki has transformed how Entrust presents itself to the market. She built our marketing from nothing and the results — in pipeline, in brand recognition, and in the quality of leads — speak for themselves.</span></blockquote>
+          <div><div class="testi-author" contenteditable="true" spellcheck="false">Senior Director, Entrust Services</div><div class="testi-role" contenteditable="true" spellcheck="false">Renewable Energy Consultancy, UK</div></div>
+        </div>
+        <div class="testimonial">
+          <blockquote><span class="open-quote">"</span><span contenteditable="true" spellcheck="false">Working with Nikki on our LinkedIn campaign was a genuinely collaborative and strategic experience. She understands the energy sector audience in a way that most marketers simply don't.</span></blockquote>
+          <div><div class="testi-author" contenteditable="true" spellcheck="false">Business Development Manager</div><div class="testi-role" contenteditable="true" spellcheck="false">Infrastructure &amp; Grid Sector</div></div>
+        </div>
+        <div class="testimonial">
+          <blockquote><span class="open-quote">"</span><span contenteditable="true" spellcheck="false">Nikki brought real creative rigour to our brand work. From messaging to campaign execution, every piece was polished, on-brand, and commercially sharp.</span></blockquote>
+          <div><div class="testi-author" contenteditable="true" spellcheck="false">Head of Planning</div><div class="testi-role" contenteditable="true" spellcheck="false">Planning Consultancy, UK</div></div>
+        </div>
+        <div class="testimonial">
+          <blockquote><span class="open-quote">"</span><span contenteditable="true" spellcheck="false">She has a rare ability to simplify complex technical narratives into compelling content that actually resonates with decision-makers. A genuine asset to any marketing team.</span></blockquote>
+          <div><div class="testi-author" contenteditable="true" spellcheck="false">Director</div><div class="testi-role" contenteditable="true" spellcheck="false">Energy Infrastructure, Ireland</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 12: WHY CHOOSE ME ─────────────────────────────── -->
+  <div class="slide" id="s12">
+    <div class="accent-bar"></div>
+    <div class="slide-inner">
+      <p class="eyebrow">Why Choose Me</p>
+      <h2 class="slide-h2">What sets me apart</h2>
+      <div class="divider"></div>
+      <div class="why-grid">
+        <div class="why-card"><div class="why-num" contenteditable="true" spellcheck="false">7+</div><h4 contenteditable="true" spellcheck="false">Years of B2B Experience</h4><p contenteditable="true" spellcheck="false">Across agency and in-house roles in renewable energy, infrastructure, telecoms and international brand accounts.</p></div>
+        <div class="why-card"><div class="why-num" contenteditable="true" spellcheck="false">4</div><h4 contenteditable="true" spellcheck="false">International Markets</h4><p contenteditable="true" spellcheck="false">UK, Ireland, EMEA and the Nordics — with ABM campaigns tailored to each market's regulatory and commercial context.</p></div>
+        <div class="why-card"><div class="why-num" contenteditable="true" spellcheck="false">MBA</div><h4 contenteditable="true" spellcheck="false">Qualified &amp; Chartered</h4><p contenteditable="true" spellcheck="false">MBA from the University of Chester. Associate Member of the Chartered Institute of Marketing (CIM) — Level 7.</p></div>
+        <div class="why-card"><div class="why-num" contenteditable="true" spellcheck="false">Full</div><h4 contenteditable="true" spellcheck="false">Stack Marketer</h4><p contenteditable="true" spellcheck="false">Strategy to execution, budget to board. I operate at every level — from MD reporting to designing a social asset in Canva.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 13: THANK YOU ─────────────────────────────────── -->
+  <div class="slide" id="s13">
+    <div style="position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--periwinkle),var(--mint));"></div>
+    <svg class="geo" style="width:280px;height:280px;bottom:-50px;left:-50px;color:var(--periwinkle);" viewBox="0 0 280 280" fill="currentColor">
+      <pattern id="d3" x="0" y="0" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.4"/></pattern>
+      <rect width="280" height="280" fill="url(#d3)"/>
+    </svg>
+    <svg class="geo" style="width:160px;height:160px;top:30px;right:50px;color:var(--mint);" viewBox="0 0 160 160" fill="none" stroke="currentColor" stroke-width="1">
+      <circle cx="80" cy="80" r="25"/><circle cx="80" cy="80" r="48"/><circle cx="80" cy="80" r="70"/><circle cx="80" cy="80" r="80"/>
+    </svg>
+    <div class="slide-inner" style="align-items:center;justify-content:center;text-align:center;gap:18px;">
+      <p class="eyebrow">Get In Touch</p>
+      <h1 class="thankyou-name">Thank<br><strong contenteditable="true" spellcheck="false">You</strong></h1>
+      <div class="divider" style="margin:0 auto;"></div>
+      <p style="font-size:14px;color:var(--fg-mid);max-width:42ch;line-height:1.8;" contenteditable="true" spellcheck="false">Open to new opportunities in B2B marketing, brand strategy, and demand generation — particularly in energy, infrastructure, and professional services.</p>
+      <div class="contact-row">
+        <a href="mailto:nikhi3696@gmail.com" contenteditable="false">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <span contenteditable="true" spellcheck="false">nikhi3696@gmail.com</span>
+        </a>
+        <a href="https://linkedin.com/in/nikhitha-regunathan" target="_blank" rel="noopener">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+          <span contenteditable="true" spellcheck="false">LinkedIn</span>
+        </a>
+        <a href="#">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span contenteditable="true" spellcheck="false">Chester, UK</span>
+        </a>
+      </div>
+      <blockquote class="quote-block">
+        <span contenteditable="true" spellcheck="false">"If you don't give the market the story to talk about, they'll define your brand's story for you."</span>
+        <cite contenteditable="true" spellcheck="false">— David Brier</cite>
+      </blockquote>
+    </div>
+  </div>
+
+</div><!-- /deck -->
+
+<!-- Nav controls -->
+<div class="nav-controls" id="controls">
+  <button class="nav-btn" id="prevBtn" onclick="prev()" disabled>←</button>
+  <div class="slide-dots" id="dotContainer"></div>
+  <span class="slide-counter" id="counter">1 / 13</span>
+  <button class="nav-btn" id="nextBtn" onclick="next()">→</button>
+</div>
+
+</div><!-- /deck-wrap -->
+
+<script>
+/* ── SLIDE ENGINE ─────────────────────────────────────────────── */
+const slides = document.querySelectorAll('.slide');
+const total  = slides.length;
+let cur = 0;
+
+const dotContainer = document.getElementById('dotContainer');
+slides.forEach((_, i) => {
+  const b = document.createElement('button');
+  b.className = 'dot' + (i === 0 ? ' on' : '');
+  b.setAttribute('aria-label', 'Slide ' + (i+1));
+  b.onclick = () => goTo(i);
+  dotContainer.appendChild(b);
+});
+
+function goTo(n) {
+  slides[cur].classList.remove('active');
+  dotContainer.children[cur].classList.remove('on');
+  cur = Math.max(0, Math.min(total - 1, n));
+  slides[cur].classList.add('active');
+  dotContainer.children[cur].classList.add('on');
+  document.getElementById('counter').textContent = (cur+1) + ' / ' + total;
+  document.getElementById('prevBtn').disabled = cur === 0;
+  document.getElementById('nextBtn').disabled = cur === total - 1;
+}
+function next() { if (cur < total-1) goTo(cur+1); }
+function prev() { if (cur > 0) goTo(cur-1); }
+
+document.addEventListener('keydown', e => {
+  if (document.activeElement && document.activeElement.isContentEditable) return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next();
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   prev();
+});
+
+document.getElementById('deck').addEventListener('click', e => {
+  if (e.target.closest('[contenteditable], button, a, input, .nav-controls, .toolbar')) return;
+  next();
+});
+
+/* ── EDIT MODE ────────────────────────────────────────────────── */
+let editMode = false;
+function toggleEdit() {
+  editMode = !editMode;
+  const btn  = document.getElementById('editBtn');
+  const ind  = document.getElementById('editIndicator');
+  const els  = document.querySelectorAll('[contenteditable]');
+  els.forEach(el => {
+    el.contentEditable = editMode ? 'true' : 'false';
+  });
+  btn.textContent  = editMode ? '✓ Done Editing' : '✏ Edit';
+  btn.style.color  = editMode ? 'var(--mint)' : '';
+  btn.style.borderColor = editMode ? 'var(--mint)' : '';
+  ind.classList.toggle('on', editMode);
+  if (!editMode) ind.classList.remove('on');
+}
+
+// Start with editing OFF so click-to-advance works by default
+document.querySelectorAll('[contenteditable]').forEach(el => {
+  el.contentEditable = 'false';
+});
+
+/* ── PHOTO UPLOAD ─────────────────────────────────────────────── */
+function triggerPhotoUpload(which) {
+  document.getElementById('photo-input-' + which).click();
+}
+
+function applyPhoto(inputId, boxId, placeholderId) {
+  const input = document.getElementById(inputId);
+  input.addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const box = document.getElementById(boxId);
+      const ph  = document.getElementById(placeholderId);
+      // Remove placeholder
+      if (ph) ph.style.display = 'none';
+      // Insert or update image
+      let img = box.querySelector('img');
+      if (!img) { img = document.createElement('img'); box.appendChild(img); }
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+applyPhoto('photo-input-cover', 'photo-cover', 'ph-cover');
+applyPhoto('photo-input-about', 'photo-about', 'ph-about');
+
+/* ── SAVE AS HTML ─────────────────────────────────────────────── */
+function saveHTML() {
+  // Temporarily set all contenteditable to true so they're valid HTML
+  const snapshot = document.documentElement.outerHTML;
+  const blob = new Blob([snapshot], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'nikki-regunathan-portfolio.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+</script>
+</body>
+</html>
